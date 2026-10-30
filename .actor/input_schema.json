@@ -125,11 +125,21 @@
         }
       ]
     },
+    "maxStops": {
+      "title": "Max Stops to Optimize",
+      "type": "integer",
+      "description": "Maximum number of stops to geocode and sequence in a single run (Free-tier Apify runs are capped at 25 results).",
+      "default": 25,
+      "prefill": 10,
+      "minimum": 1,
+      "maximum": 500
+    },
     "maxMinutes": {
       "title": "Max Shift Time Window (Minutes)",
       "type": "integer",
       "description": "Maximum allowed cumulative minutes (driving + on-site dwell time). Stops exceeding this window are marked as Deferred.",
       "default": 120,
+      "prefill": 120,
       "minimum": 15,
       "maximum": 1440
     },
@@ -138,6 +148,7 @@
       "type": "integer",
       "description": "Default dwell or appointment duration in minutes per stop when not overridden on an individual stop.",
       "default": 12,
+      "prefill": 12,
       "minimum": 0,
       "maximum": 240
     },
@@ -146,6 +157,7 @@
       "type": "integer",
       "description": "Average urban/suburban road travel speed in miles per hour used for travel-time estimation.",
       "default": 28,
+      "prefill": 28,
       "minimum": 5,
       "maximum": 80
     },
@@ -154,6 +166,7 @@
       "type": "integer",
       "description": "Multiplier applied to straight-line Haversine distance to approximate real street grids (128 = 1.28x Haversine distance).",
       "default": 128,
+      "prefill": 128,
       "minimum": 100,
       "maximum": 200
     }

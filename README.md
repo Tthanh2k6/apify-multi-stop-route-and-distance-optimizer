@@ -125,3 +125,9 @@ Built and maintained by **Trung Thanh Tran** (*Python, Playwright, n8n & AI Auto
 - ⚡ **Order Fast-Turnaround Automation Gigs on Fiverr:** [fiverr.com/trungthnhtrn244](https://www.fiverr.com/trungthnhtrn244)
 - 📦 **Download the Complete Python, AI & n8n Scraper Toolkit Pro (6 CLI Engines + 3 Blueprints):** [trungthanh16.gumroad.com/l/python-ai-automation-n8n-scraper-toolkit-pro](https://trungthanh16.gumroad.com/l/python-ai-automation-n8n-scraper-toolkit-pro)
 - 💻 **GitHub Portfolio:** [github.com/Tthanh2k6](https://github.com/Tthanh2k6)
+
+---
+
+## ⚖️ Legal & Independence Disclaimer
+
+**Nominative Fair Use — Public Non-Authenticated Factual Data Only:** This Actor is an independent route-optimization and geocoding utility that processes exclusively user-supplied addresses and coordinates alongside public OpenStreetMap Nominatim geocoding data (© OpenStreetMap contributors, licensed under ODbL, respecting the 1 req/sec Nominatim Usage Policy). It does not bypass authentication barriers, login walls, or proprietary paid mapping APIs. Any third-party platform names referenced (such as Google Maps, HubSpot, Airtable, Make.com, or n8n) are trademarks of their respective owners and are used strictly for descriptive identification and deep-link navigation purposes (*nominative fair use*). Users act as independent Data Controllers and are solely responsible for verifying road conditions, turn restrictions, and compliance with applicable data protection laws (including GDPR and CCPA).

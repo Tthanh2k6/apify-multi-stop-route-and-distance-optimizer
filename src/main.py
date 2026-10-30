@@ -9,10 +9,23 @@ import asyncio
 import hashlib
 import json
 import math
+import os
 import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote_plus
+
+FREE_TIER_MAX_ITEMS = 25
+FREE_TIER_CAP_MSG = (
+    "Free-tier run capped at 25 results. Upgrade Apify plan for unlimited scale "
+    "or contact Trung Thanh Tran on Upwork for custom pipelines."
+)
+
+
+def is_free_tier_at_home() -> bool:
+    is_at_home = os.getenv("APIFY_IS_AT_HOME", "").strip().lower() in ("1", "true", "yes")
+    user_is_paying = os.getenv("APIFY_USER_IS_PAYING", "").strip().lower() in ("1", "true", "yes")
+    return is_at_home and not user_is_paying
 
 import httpx
 
@@ -449,11 +462,23 @@ async def main() -> None:
             actor_input = await Actor.get_input() or {}
             origin = str(actor_input.get("origin") or DEFAULT_ORIGIN)
             destination = str(actor_input.get("destination") if "destination" in actor_input else DEFAULT_ORIGIN)
-            stops = actor_input.get("stops") or DEFAULT_STOPS
+            stops = list(actor_input.get("stops") or DEFAULT_STOPS)
+            max_stops = int(actor_input.get("maxStops", 25))
             max_minutes = int(actor_input.get("maxMinutes", 120))
             service_mins = int(actor_input.get("serviceMinutesPerStop", 12))
             avg_speed = int(actor_input.get("averageSpeedMph", 28))
             circuity_pct = int(actor_input.get("roadCircuityPercent", 128))
+
+            was_capped = False
+            if is_free_tier_at_home() and (len(stops) > FREE_TIER_MAX_ITEMS or max_stops > FREE_TIER_MAX_ITEMS):
+                max_stops = min(max_stops, FREE_TIER_MAX_ITEMS)
+                if len(stops) > FREE_TIER_MAX_ITEMS:
+                    stops = stops[:FREE_TIER_MAX_ITEMS]
+                was_capped = True
+                Actor.log.warning(FREE_TIER_CAP_MSG)
+                await Actor.set_status_message(FREE_TIER_CAP_MSG)
+            else:
+                stops = stops[:max_stops]
 
             Actor.log.info(
                 f"Optimizing {len(stops)} stops (maxMinutes={max_minutes}, circuity={circuity_pct}%)..."
@@ -467,14 +492,21 @@ async def main() -> None:
                 avg_speed_mph=avg_speed,
                 road_circuity_percent=circuity_pct,
             )
+            results = results[:max_stops]
             await Actor.push_data(results)
             await safe_charge_event("route-stop-optimized", count=len(results))
-            if results:
-                Actor.log.info(
+            if was_capped:
+                await Actor.set_status_message(FREE_TIER_CAP_MSG)
+            elif results:
+                summary_msg = (
                     f"Route optimized: {results[0]['naive_route_total_miles']} mi -> "
                     f"{results[0]['optimized_route_total_miles']} mi "
                     f"({results[0]['distance_saved_pct']}% saved). Pushed {len(results)} ordered stops."
                 )
+                await Actor.set_status_message(summary_msg)
+                Actor.log.info(summary_msg)
+            else:
+                await Actor.set_status_message("Completed route check (0 stops returned).")
     else:
         results = await optimize_route_pipeline(
             origin_raw=DEFAULT_ORIGIN,
