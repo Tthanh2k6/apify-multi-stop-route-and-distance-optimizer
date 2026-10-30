@@ -1,0 +1,38 @@
+{
+  "actorSpecification": 1,
+  "fields": {},
+  "views": {
+    "overview": {
+      "title": "Optimized Multi-Stop Route Overview",
+      "transformation": {
+        "fields": [
+          "stop_sequence",
+          "schedule_status",
+          "label",
+          "address",
+          "leg_distance_miles",
+          "leg_drive_minutes",
+          "service_minutes",
+          "cumulative_minutes",
+          "distance_saved_pct",
+          "google_maps_nav_url"
+        ]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "stop_sequence": { "label": "Stop #", "format": "number" },
+          "schedule_status": { "label": "Window Status", "format": "text" },
+          "label": { "label": "Stop Label", "format": "text" },
+          "address": { "label": "Street Address", "format": "text" },
+          "leg_distance_miles": { "label": "Leg Miles", "format": "number" },
+          "leg_drive_minutes": { "label": "Drive Mins", "format": "number" },
+          "service_minutes": { "label": "Dwell Mins", "format": "number" },
+          "cumulative_minutes": { "label": "Elapsed Mins", "format": "number" },
+          "distance_saved_pct": { "label": "2-Opt Saved %", "format": "number" },
+          "google_maps_nav_url": { "label": "Google Maps Multi-Stop URL", "format": "link" }
+        }
+      }
+    }
+  }
+}

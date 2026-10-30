@@ -1,0 +1,22 @@
+{
+  "actorSpecification": 1,
+  "name": "multi-stop-route-and-distance-optimizer",
+  "title": "Multi-Stop Route, Geocoder & 2-Opt TSP Distance Optimizer",
+  "description": "Geocodes street addresses or lat/lng coordinates via OpenStreetMap Nominatim, builds road-adjusted Haversine distance matrices, solves Nearest-Neighbor + 2-Opt Travelling Salesperson (TSP) route optimization within shift time windows, and generates multi-stop Google Maps navigation URLs.",
+  "version": "1.0",
+  "meta": {
+    "templateId": "python-start"
+  },
+  "defaultRunOptions": {
+    "build": "latest",
+    "timeoutSecs": 300,
+    "memoryMbytes": 256
+  },
+  "input": "./input_schema.json",
+  "output": "./output_schema.json",
+  "dockerfile": "../Dockerfile",
+  "readme": "../README.md",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  }
+}

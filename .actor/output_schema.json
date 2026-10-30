@@ -1,0 +1,13 @@
+{
+  "actorOutputSchemaVersion": 1,
+  "title": "Optimized Multi-Stop Route & TSP Schedule Output",
+  "description": "Ordered route stops with geocoded coordinates, leg distances, cumulative shift durations, 2-Opt distance savings, and Google Maps navigation links.",
+  "type": "object",
+  "properties": {
+    "dataset": {
+      "type": "string",
+      "title": "Optimized Multi-Stop Route Dataset",
+      "template": "{{links.apiDefaultDatasetUrl}}/items"
+    }
+  }
+}

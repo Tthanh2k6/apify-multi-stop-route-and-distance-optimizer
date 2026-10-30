@@ -1,0 +1,162 @@
+{
+  "title": "Multi-Stop Route, Geocoder & 2-Opt TSP Distance Optimizer Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "origin": {
+      "title": "Start Location (Address or 'lat, lng')",
+      "type": "string",
+      "description": "Starting depot, office address, or 'latitude, longitude' coordinate pair.",
+      "editor": "textfield",
+      "default": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108",
+      "prefill": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108"
+    },
+    "destination": {
+      "title": "End Location (Address, 'lat, lng', or blank for open route)",
+      "type": "string",
+      "description": "Ending depot address or 'latitude, longitude'. Set identical to Start Location for a closed round-trip, or leave empty for an open-ended route.",
+      "editor": "textfield",
+      "default": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108",
+      "prefill": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108"
+    },
+    "stops": {
+      "title": "Stops to Optimize (Addresses or Coordinate Objects)",
+      "type": "array",
+      "description": "Array of stop objects ({label, address, lat, lng, priority, serviceMinutes}) or plain street address strings from Google Sheets, HubSpot, Airtable, or CSV.",
+      "editor": "json",
+      "default": [
+        {
+          "label": "Stop A - River Market",
+          "address": "20 E 5th St, Kansas City, MO 64106",
+          "lat": 39.1088,
+          "lng": -94.5818,
+          "priority": 90,
+          "serviceMinutes": 12
+        },
+        {
+          "label": "Stop B - Country Club Plaza",
+          "address": "4706 Broadway Blvd, Kansas City, MO 64112",
+          "lat": 39.0419,
+          "lng": -94.5908,
+          "priority": 100,
+          "serviceMinutes": 15
+        },
+        {
+          "label": "Stop C - Brookside",
+          "address": "6300 Brookside Plaza, Kansas City, MO 64113",
+          "lat": 39.0132,
+          "lng": -94.5919,
+          "priority": 80,
+          "serviceMinutes": 12
+        },
+        {
+          "label": "Stop D - Westport",
+          "address": "4050 Pennsylvania Ave, Kansas City, MO 64111",
+          "lat": 39.0531,
+          "lng": -94.5905,
+          "priority": 85,
+          "serviceMinutes": 10
+        },
+        {
+          "label": "Stop E - Crossroads District",
+          "address": "1901 Baltimore Ave, Kansas City, MO 64108",
+          "lat": 39.0902,
+          "lng": -94.5844,
+          "priority": 95,
+          "serviceMinutes": 12
+        },
+        {
+          "label": "Stop F - 18th & Vine",
+          "address": "1616 E 18th St, Kansas City, MO 64108",
+          "lat": 39.0913,
+          "lng": -94.5632,
+          "priority": 75,
+          "serviceMinutes": 10
+        }
+      ],
+      "prefill": [
+        {
+          "label": "Stop A - River Market",
+          "address": "20 E 5th St, Kansas City, MO 64106",
+          "lat": 39.1088,
+          "lng": -94.5818,
+          "priority": 90,
+          "serviceMinutes": 12
+        },
+        {
+          "label": "Stop B - Country Club Plaza",
+          "address": "4706 Broadway Blvd, Kansas City, MO 64112",
+          "lat": 39.0419,
+          "lng": -94.5908,
+          "priority": 100,
+          "serviceMinutes": 15
+        },
+        {
+          "label": "Stop C - Brookside",
+          "address": "6300 Brookside Plaza, Kansas City, MO 64113",
+          "lat": 39.0132,
+          "lng": -94.5919,
+          "priority": 80,
+          "serviceMinutes": 12
+        },
+        {
+          "label": "Stop D - Westport",
+          "address": "4050 Pennsylvania Ave, Kansas City, MO 64111",
+          "lat": 39.0531,
+          "lng": -94.5905,
+          "priority": 85,
+          "serviceMinutes": 10
+        },
+        {
+          "label": "Stop E - Crossroads District",
+          "address": "1901 Baltimore Ave, Kansas City, MO 64108",
+          "lat": 39.0902,
+          "lng": -94.5844,
+          "priority": 95,
+          "serviceMinutes": 12
+        },
+        {
+          "label": "Stop F - 18th & Vine",
+          "address": "1616 E 18th St, Kansas City, MO 64108",
+          "lat": 39.0913,
+          "lng": -94.5632,
+          "priority": 75,
+          "serviceMinutes": 10
+        }
+      ]
+    },
+    "maxMinutes": {
+      "title": "Max Shift Time Window (Minutes)",
+      "type": "integer",
+      "description": "Maximum allowed cumulative minutes (driving + on-site dwell time). Stops exceeding this window are marked as Deferred.",
+      "default": 120,
+      "minimum": 15,
+      "maximum": 1440
+    },
+    "serviceMinutesPerStop": {
+      "title": "Default On-Site Service Time per Stop (Minutes)",
+      "type": "integer",
+      "description": "Default dwell or appointment duration in minutes per stop when not overridden on an individual stop.",
+      "default": 12,
+      "minimum": 0,
+      "maximum": 240
+    },
+    "averageSpeedMph": {
+      "title": "Estimated Average Driving Speed (MPH)",
+      "type": "integer",
+      "description": "Average urban/suburban road travel speed in miles per hour used for travel-time estimation.",
+      "default": 28,
+      "minimum": 5,
+      "maximum": 80
+    },
+    "roadCircuityPercent": {
+      "title": "Road Circuity Multiplier (%)",
+      "type": "integer",
+      "description": "Multiplier applied to straight-line Haversine distance to approximate real street grids (128 = 1.28x Haversine distance).",
+      "default": 128,
+      "minimum": 100,
+      "maximum": 200
+    }
+  },
+  "required": ["stops"]
+}
