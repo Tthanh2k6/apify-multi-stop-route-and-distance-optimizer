@@ -1,23 +1,28 @@
-# Multi-Stop Route, Geocoder & 2-Opt TSP Distance Optimizer (Apify Actor)
+# Multi-Stop Route Planner with Nominatim Geocoding and 2-Opt (Apify Actor)
 
-Lightweight, zero-API-key **Python Async (`httpx` + `2-Opt TSP`) Apify Actor** that accepts street addresses or `lat, lng` coordinates from **Google Sheets, HubSpot, Airtable, Pipedrive, or CSV**, geocodes via **OpenStreetMap Nominatim** (with compliant `1 req/s` throttling and coordinate fallback), builds road-adjusted **Haversine distance matrices**, solves **Nearest-Neighbor + 2-Opt Travelling Salesperson (TSP) Route Optimization**, enforces **shift time-window budgets (`maxMinutes`)**, and outputs **1-click Multi-Stop Google Maps turn-by-turn navigation URLs**.
+An Apify actor in Python (`httpx` + plain math). It takes an origin, an optional destination and a list of stops (addresses or coordinates), orders the stops to shorten the trip, estimates drive time, marks stops that do not fit in a time budget, and builds a Google Maps directions link for the ordered route. No API key is needed.
 
-Built specifically for **field sales teams, real estate wholesalers/inspectors, HVAC/home-service dispatchers, medical couriers, and n8n / Make.com logistics automations** who want fast multi-stop route optimization without paying enterprise Google Routes Matrix fees.
+Distances are estimates: straight-line (Haversine) distance multiplied by a "road circuity" factor (default 1.28). The actor does not call a routing engine, so it knows nothing about real roads, one-way streets, traffic or turn restrictions.
 
----
+## What it does
 
-## ✨ Key Engineering Capabilities
+1. **Resolves each location** in this order:
+   - explicit `lat`/`lng` fields on the stop (`geocode_source: "input_coordinates"`);
+   - an address string that is itself `"lat, lng"` (`"inline_coordinates"`);
+   - a small built-in table of about 16 addresses, mostly the Kansas City demo addresses plus a few US city names (`"verified_cache"`);
+   - OpenStreetMap Nominatim search, throttled to about 1 request per second (`"osm_nominatim"`);
+   - **if all of the above fail, an invented point** (see below).
+2. **Orders the stops** with a nearest-neighbour tour from the origin, then 2-opt swaps (up to 60 passes), keeping the origin and the optional destination fixed. It reports the input-order distance (`naive_route_total_miles`), the optimized distance and the saving. The `priority` field is copied to the output but is not used when ordering.
+3. **Applies the time budget.** It walks the ordered stops, adding drive time at `averageSpeedMph` plus each stop's service minutes. Stops past `maxMinutes` are marked `Deferred (Over Time Window)`. The first stop is always scheduled. The return leg to the destination is not counted in the budget.
+4. **Builds one Google Maps link** (`/maps/dir/?api=1`) with the scheduled stops as waypoints (Google allows at most 20 intermediate waypoints, so extra ones are dropped from the link).
 
-- **Zero External API Keys Required:** Resolves coordinates out of the box via inline `"lat, lng"` detection, explicit `{lat, lng}` fields, and polite **OpenStreetMap Nominatim** geocoding (`1 req/sec` compliant `User-Agent`).
-- **Nearest-Neighbor + 2-Opt TSP Solver:** Eliminates zig-zag route crossings across both **Closed Round-Trips** (`Origin -> Stops -> Origin`) and **Open-Ended Routes** (`Origin -> Stops`), reporting exact before-and-after mileage savings (`naive_route_total_miles` vs `optimized_route_total_miles` and `distance_saved_pct`).
-- **Shift Time-Window Budgeting (`maxMinutes`):** Dynamically accumulates leg drive minutes + per-stop service/dwell duration (`serviceMinutesPerStop`) and flags stops as `Scheduled` vs `Deferred (Over Time Window)`.
-- **Road Circuity Calibration (`roadCircuityPercent`):** Applies configurable street-grid circuity multipliers (`128%` = `1.28x` great-circle Haversine distance) and urban speed profiles (`averageSpeedMph`) for realistic ETA estimation.
-- **1-Click Multi-Stop Google Maps URLs:** Generates mobile-ready `https://www.google.com/maps/dir/?api=1&origin=...&waypoints=...` links ready to send via SMS, Slack, Telegram, or Google Sheets.
-- **Ultra-Low Memory Footprint (`256 MB RAM`):** Pure Python math + async `httpx` — runs in `< 1 second` when coordinates are supplied.
+## Geocoding fallback: read this before using the output
 
----
+When an address cannot be resolved (Nominatim returns nothing, is rate-limited, or the request fails), the actor does **not** stop. It makes up a coordinate: a point within about ±0.04° (roughly 4 km) of the origin, derived from a SHA-256 hash of the address text. The record is marked `geocode_source: "fallback_centroid"`.
 
-## 📥 Input Configuration
+These points are not real locations, so distances, ETAs and the stop order involving them are wrong. If the **origin** itself cannot be resolved, it falls back around Union Station, Kansas City (the built-in default), which makes the whole route meaningless for any other city. Always check `geocode_source` and `origin_geocode_source`, and drop or fix rows with `fallback_centroid` before you use the route. Supplying `lat`/`lng` yourself avoids the problem.
+
+## Input
 
 ```json
 {
@@ -29,7 +34,6 @@ Built specifically for **field sales teams, real estate wholesalers/inspectors, 
       "address": "20 E 5th St, Kansas City, MO 64106",
       "lat": 39.1088,
       "lng": -94.5818,
-      "priority": 90,
       "serviceMinutes": 12
     },
     {
@@ -37,7 +41,6 @@ Built specifically for **field sales teams, real estate wholesalers/inspectors, 
       "address": "4706 Broadway Blvd, Kansas City, MO 64112",
       "lat": 39.0419,
       "lng": -94.5908,
-      "priority": 100,
       "serviceMinutes": 15
     }
   ],
@@ -48,11 +51,9 @@ Built specifically for **field sales teams, real estate wholesalers/inspectors, 
 }
 ```
 
-> **Tip:** `stops` also accepts plain address strings (`["20 E 5th St, Kansas City, MO", "4706 Broadway Blvd, Kansas City, MO"]`) or coordinate strings (`["39.1088, -94.5818", "39.0419, -94.5908"]`)!
+`stops` also accepts plain address strings or `"lat, lng"` strings. Leave `destination` empty for a one-way route. Runs on the Apify free tier are capped at 25 stops.
 
----
-
-## 📤 Sample Output Record
+## Output record (one per stop)
 
 ```json
 {
@@ -72,6 +73,9 @@ Built specifically for **field sales teams, real estate wholesalers/inspectors, 
   "service_minutes": 12,
   "cumulative_miles": 0.44,
   "cumulative_minutes": 12.9,
+  "origin_address": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108",
+  "origin_geocode_source": "verified_cache",
+  "destination_address": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108",
   "naive_route_total_miles": 22.86,
   "optimized_route_total_miles": 16.41,
   "distance_saved_miles": 6.45,
@@ -80,16 +84,13 @@ Built specifically for **field sales teams, real estate wholesalers/inspectors, 
 }
 ```
 
----
+## Calling it from Python
 
-## 🛠️ Integration with n8n, Make.com & Python
-
-### 1. Python (`apify-client`)
 ```python
 from apify_client import ApifyClient
 
 client = ApifyClient("YOUR_APIFY_TOKEN")
-run = client.actor("thanh81646/multi-stop-route-and-distance-optimizer").call(
+run = client.actor("thanh81646/apify-multi-stop-route-and-distance-optimizer").call(
     run_input={
         "origin": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108",
         "destination": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108",
@@ -103,31 +104,17 @@ run = client.actor("thanh81646/multi-stop-route-and-distance-optimizer").call(
 )
 
 for stop in client.dataset(run["defaultDatasetId"]).iterate_items():
-    print(f"#{stop['stop_sequence']} {stop['label']} ({stop['cumulative_minutes']}m) -> {stop['address']}")
+    if stop["geocode_source"] == "fallback_centroid":
+        print("WARNING: address not geocoded:", stop["address"])
+    print(f"#{stop['stop_sequence']} {stop['label']} ({stop['cumulative_minutes']} min) -> {stop['address']}")
 ```
 
-### 2. n8n Workflow (`Google Sheets / CRM -> Apify -> Slack / SMS`)
-1. Add a **Google Sheets** (`Get Rows`) or **HubSpot** (`Get Deals`) node to pull unvisited field addresses.
-2. Add the **Apify** node (`Run an Actor and Get Dataset`) pointing to `multi-stop-route-and-distance-optimizer` and pass `{{ $json.addresses }}` into `stops`.
-3. Send `{{ $json.google_maps_nav_url }}` and the ordered itinerary to your field reps via **Slack**, **Twilio SMS**, or **Gmail**!
+In n8n or Make.com, use the Apify "Run an Actor" node/module with the actor ID `thanh81646/apify-multi-stop-route-and-distance-optimizer`, pass your addresses into `stops`, and send `google_maps_nav_url` to whoever drives the route.
 
-### 3. Make.com Scenario
-1. Connect **Airtable / Google Sheets -> Watch Records** to **Apify -> Run an Actor** (`sync=true`).
-2. Iterate returned dataset items and write `stop_sequence`, `cumulative_minutes`, and `google_maps_nav_url` back to your dispatch sheet.
+## Author
 
----
+Trung Thanh Tran: [Upwork](https://www.upwork.com/freelancers/trungthanhtrandev) · [GitHub](https://github.com/Tthanh2k6) · [Apify](https://apify.com/thanh81646)
 
-## 💼 Custom Logistics Automation, Scrapers & AI Workflows
+## Legal note
 
-Built and maintained by **Trung Thanh Tran** (*Python, Playwright, n8n & AI Automation Engineer*):
-
-- 🟢 **Hire me on Upwork (Custom Scrapers, Route Planners & AI Pipelines):** [upwork.com/freelancers/trungthanhtrandev](https://www.upwork.com/freelancers/trungthanhtrandev)
-- ⚡ **Order Fast-Turnaround Automation Gigs on Fiverr:** [fiverr.com/trungthnhtrn244](https://www.fiverr.com/trungthnhtrn244)
-- 📦 **Download the Complete Python, AI & n8n Scraper Toolkit Pro (6 CLI Engines + 3 Blueprints):** [trungthanh16.gumroad.com/l/python-ai-automation-n8n-scraper-toolkit-pro](https://trungthanh16.gumroad.com/l/python-ai-automation-n8n-scraper-toolkit-pro)
-- 💻 **GitHub Portfolio:** [github.com/Tthanh2k6](https://github.com/Tthanh2k6)
-
----
-
-## ⚖️ Legal & Independence Disclaimer
-
-**Nominative Fair Use — Public Non-Authenticated Factual Data Only:** This Actor is an independent route-optimization and geocoding utility that processes exclusively user-supplied addresses and coordinates alongside public OpenStreetMap Nominatim geocoding data (© OpenStreetMap contributors, licensed under ODbL, respecting the 1 req/sec Nominatim Usage Policy). It does not bypass authentication barriers, login walls, or proprietary paid mapping APIs. Any third-party platform names referenced (such as Google Maps, HubSpot, Airtable, Make.com, or n8n) are trademarks of their respective owners and are used strictly for descriptive identification and deep-link navigation purposes (*nominative fair use*). Users act as independent Data Controllers and are solely responsible for verifying road conditions, turn restrictions, and compliance with applicable data protection laws (including GDPR and CCPA).
+The actor processes addresses and coordinates you supply and queries the public OpenStreetMap Nominatim service (© OpenStreetMap contributors, ODbL) within its usage policy. Google Maps and other product names are trademarks of their owners and are used only to build links or identify them. You are responsible for checking real road conditions and for complying with applicable data protection law (including GDPR and CCPA).
