@@ -1,5 +1,7 @@
 # Multi-Stop Route Planner with Nominatim Geocoding and 2-Opt (Apify Actor)
 
+**Try it on Apify Store:** https://apify.com/thanh81646/apify-multi-stop-route-and-distance-optimizer
+
 An Apify actor in Python (`httpx` + plain math). It takes an origin, an optional destination and a list of stops (addresses or coordinates), orders the stops to shorten the trip, estimates drive time, marks stops that do not fit in a time budget, and builds a Google Maps directions link for the ordered route. No API key is needed.
 
 Distances are estimates: straight-line (Haversine) distance multiplied by a "road circuity" factor (default 1.28). The actor does not call a routing engine, so it knows nothing about real roads, one-way streets, traffic or turn restrictions.
