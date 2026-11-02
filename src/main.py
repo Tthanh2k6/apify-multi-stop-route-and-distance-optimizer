@@ -39,7 +39,7 @@ COORD_PAIR_REGEX = re.compile(
     r"^\s*([+-]?\d{1,2}(?:\.\d+)?)\s*[,;\s]\s*([+-]?\d{1,3}(?:\.\d+)?)\s*$"
 )
 
-# Pre-verified landmark & metro cache for instant (<50ms) zero-network resolution on common depots
+# Small hard-coded table (demo addresses + a few US city centres) resolved without a network call
 KNOWN_GEOCODE_CACHE: Dict[str, Tuple[float, float]] = {
     "union station, 30 w pershing rd, kansas city, mo 64108": (39.0853, -94.5852),
     "downtown kansas city, mo": (39.0997, -94.5786),
