@@ -113,6 +113,10 @@ for stop in client.dataset(run["defaultDatasetId"]).iterate_items():
 
 In n8n or Make.com, use the Apify "Run an Actor" node/module with the actor ID `thanh81646/apify-multi-stop-route-and-distance-optimizer`, pass your addresses into `stops`, and send `google_maps_nav_url` to whoever drives the route.
 
+## Need a custom version?
+
+If you need extra fields, another website, scheduled runs into Google Sheets, Airtable or a webhook, or an n8n / Make workflow around this actor, email **ttrungthanh90@gmail.com** with the target site and the fields you need, and I will reply with a fixed quote. You can also message me through my [Apify profile](https://apify.com/thanh81646).
+
 ## Author
 
 Trung Thanh Tran: [Upwork](https://www.upwork.com/freelancers/trungthanhtrandev) · [GitHub](https://github.com/Tthanh2k6) · [Apify](https://apify.com/thanh81646)
