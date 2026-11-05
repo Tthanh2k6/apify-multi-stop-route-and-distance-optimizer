@@ -119,7 +119,7 @@ If you need extra fields, another website, scheduled runs into Google Sheets, Ai
 
 ## Author
 
-Trung Thanh Tran: [Upwork](https://www.upwork.com/freelancers/trungthanhtrandev) · [GitHub](https://github.com/Tthanh2k6) · [Apify](https://apify.com/thanh81646)
+Trung Thanh Tran: [Upwork](https://www.upwork.com/freelancers/trungthanhtrandev) · [GitHub](https://github.com/Tthanh2k6) · [Apify](https://apify.com/thanh81646) · [Contra](https://contra.com/trung_thanh_tran_7tjnw73h)
 
 ## Legal note
 
