@@ -124,6 +124,32 @@ DEFAULT_STOPS: List[Dict[str, Any]] = [
 DEFAULT_ORIGIN = "Union Station, 30 W Pershing Rd, Kansas City, MO 64108"
 
 
+def _coerce_int(value: Any, default: int, minimum: int = 0) -> int:
+    """Safely parse optional integer input without crashing on None/empty values."""
+    if value is None or isinstance(value, bool):
+        return default
+    if isinstance(value, str) and not value.strip():
+        return default
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return parsed if parsed >= minimum else default
+
+
+def _coerce_float(value: Any) -> Optional[float]:
+    """Safely parse optional float coordinates; blank or invalid values return None."""
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, str) and not value.strip():
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if math.isfinite(parsed) else None
+
+
 def parse_inline_coords(text: str) -> Optional[Tuple[float, float]]:
     match = COORD_PAIR_REGEX.match(text or "")
     if not match:
@@ -350,8 +376,10 @@ async def optimize_route_pipeline(
             )
         elif isinstance(item, dict):
             addr = str(item.get("address") or item.get("location") or "").strip()
-            lat_val = item.get("lat") if item.get("lat") is not None else item.get("latitude")
-            lng_val = item.get("lng") if item.get("lng") is not None else item.get("longitude")
+            raw_lat = item.get("lat") if item.get("lat") is not None else item.get("latitude")
+            raw_lng = item.get("lng") if item.get("lng") is not None else item.get("longitude")
+            lat_val = _coerce_float(raw_lat)
+            lng_val = _coerce_float(raw_lng)
             if not addr and lat_val is not None and lng_val is not None:
                 addr = f"{lat_val}, {lng_val}"
             if not addr:
@@ -360,10 +388,10 @@ async def optimize_route_pipeline(
                 {
                     "label": str(item.get("label") or item.get("name") or f"Stop #{idx + 1}").strip(),
                     "address": addr,
-                    "lat": float(lat_val) if lat_val is not None else None,
-                    "lng": float(lng_val) if lng_val is not None else None,
-                    "priority": int(item.get("priority", 50)),
-                    "serviceMinutes": int(item.get("serviceMinutes", default_service_minutes)),
+                    "lat": lat_val,
+                    "lng": lng_val,
+                    "priority": _coerce_int(item.get("priority"), 50, minimum=0),
+                    "serviceMinutes": _coerce_int(item.get("serviceMinutes"), default_service_minutes, minimum=0),
                 }
             )
 
@@ -477,14 +505,18 @@ async def main() -> None:
     if HAS_APIFY:
         async with Actor:
             actor_input = await Actor.get_input() or {}
-            origin = str(actor_input.get("origin") or DEFAULT_ORIGIN)
-            destination = str(actor_input.get("destination") if "destination" in actor_input else DEFAULT_ORIGIN)
+            origin = str(actor_input.get("origin") or DEFAULT_ORIGIN).strip() or DEFAULT_ORIGIN
+            if "destination" in actor_input:
+                raw_dest = actor_input.get("destination")
+                destination = "" if raw_dest is None else str(raw_dest).strip()
+            else:
+                destination = DEFAULT_ORIGIN
             stops = list(actor_input.get("stops") or DEFAULT_STOPS)
-            max_stops = int(actor_input.get("maxStops", 25))
-            max_minutes = int(actor_input.get("maxMinutes", 120))
-            service_mins = int(actor_input.get("serviceMinutesPerStop", 12))
-            avg_speed = int(actor_input.get("averageSpeedMph", 28))
-            circuity_pct = int(actor_input.get("roadCircuityPercent", 128))
+            max_stops = _coerce_int(actor_input.get("maxStops"), 25, minimum=1)
+            max_minutes = _coerce_int(actor_input.get("maxMinutes"), 120, minimum=1)
+            service_mins = _coerce_int(actor_input.get("serviceMinutesPerStop"), 12, minimum=0)
+            avg_speed = _coerce_int(actor_input.get("averageSpeedMph"), 28, minimum=1)
+            circuity_pct = _coerce_int(actor_input.get("roadCircuityPercent"), 128, minimum=100)
 
             was_capped = False
             if is_free_tier_at_home() and (len(stops) > FREE_TIER_MAX_ITEMS or max_stops > FREE_TIER_MAX_ITEMS):

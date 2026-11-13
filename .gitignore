@@ -5,3 +5,4 @@ venv/
 storage/
 apify_storage/
 .env
+.pytest_cache/
