@@ -1,6 +1,6 @@
 # Multi-Stop Route Planner with Nominatim Geocoding and 2-Opt (Apify Actor)
 
-**Try it on Apify Store:** https://apify.com/thanh81646/apify-multi-stop-route-and-distance-optimizer
+On Apify Store: https://apify.com/thanh81646/apify-multi-stop-route-and-distance-optimizer
 
 An Apify actor in Python (`httpx` + plain math). It takes an origin, an optional destination and a list of stops (addresses or coordinates), orders the stops to shorten the trip, estimates drive time, marks stops that do not fit in a time budget, and builds a Google Maps directions link for the ordered route. No API key is needed.
 
@@ -8,21 +8,21 @@ Distances are estimates: straight-line (Haversine) distance multiplied by a "roa
 
 ## What it does
 
-1. **Resolves each location** in this order:
+1. Resolves each location in this order:
    - explicit `lat`/`lng` fields on the stop (`geocode_source: "input_coordinates"`);
    - an address string that is itself `"lat, lng"` (`"inline_coordinates"`);
    - a small built-in table of about 16 addresses, mostly the Kansas City demo addresses plus a few US city names (`"verified_cache"`);
    - OpenStreetMap Nominatim search, throttled to about 1 request per second (`"osm_nominatim"`);
-   - **if all of the above fail, an invented point** (see below).
-2. **Orders the stops** with a nearest-neighbour tour from the origin, then 2-opt swaps (up to 60 passes), keeping the origin and the optional destination fixed. It reports the input-order distance (`naive_route_total_miles`), the optimized distance and the saving. The `priority` field is copied to the output but is not used when ordering.
-3. **Applies the time budget.** It walks the ordered stops, adding drive time at `averageSpeedMph` plus each stop's service minutes. Stops past `maxMinutes` are marked `Deferred (Over Time Window)`. The first stop is always scheduled. The return leg to the destination is not counted in the budget.
-4. **Builds one Google Maps link** (`/maps/dir/?api=1`) with the scheduled stops as waypoints (Google allows at most 20 intermediate waypoints, so extra ones are dropped from the link).
+   - if all of the above fail, an invented point (see below).
+2. Orders the stops with a nearest-neighbour tour from the origin, then 2-opt swaps (up to 60 passes), keeping the origin and the optional destination fixed. It reports the input-order distance (`naive_route_total_miles`), the optimized distance and the saving. The `priority` field is copied to the output but is not used when ordering.
+3. Applies the time budget. It walks the ordered stops, adding drive time at `averageSpeedMph` plus each stop's service minutes. Stops past `maxMinutes` are marked `Deferred (Over Time Window)`. The first stop is always scheduled. The return leg to the destination is not counted in the budget.
+4. Builds one Google Maps link (`/maps/dir/?api=1`) with the scheduled stops as waypoints (Google allows at most 20 intermediate waypoints, so extra ones are dropped from the link).
 
 ## Geocoding fallback: read this before using the output
 
-When an address cannot be resolved (Nominatim returns nothing, is rate-limited, or the request fails), the actor does **not** stop. It makes up a coordinate: a point within about ±0.04° (roughly 4 km) of the origin, derived from a SHA-256 hash of the address text. The record is marked `geocode_source: "fallback_centroid"`.
+When an address cannot be resolved (Nominatim returns nothing, is rate-limited, or the request fails), the actor does not stop. It makes up a coordinate: a point within about ±0.04° (roughly 4 km) of the origin, derived from a SHA-256 hash of the address text. The record is marked `geocode_source: "fallback_centroid"`.
 
-These points are not real locations, so distances, ETAs and the stop order involving them are wrong. If the **origin** itself cannot be resolved, it falls back around Union Station, Kansas City (the built-in default), which makes the whole route meaningless for any other city. Always check `geocode_source` and `origin_geocode_source`, and drop or fix rows with `fallback_centroid` before you use the route. Supplying `lat`/`lng` yourself avoids the problem.
+These points are not real locations, so distances, ETAs and the stop order involving them are wrong. If the origin itself cannot be resolved, it falls back around Union Station, Kansas City (the built-in default), which makes the whole route meaningless for any other city. Always check `geocode_source` and `origin_geocode_source`, and drop or fix rows with `fallback_centroid` before you use the route. Supplying `lat`/`lng` yourself avoids the problem.
 
 ## Input
 
@@ -57,6 +57,8 @@ These points are not real locations, so distances, ETAs and the stop order invol
 
 ## Output record (one per stop)
 
+First record from a local run on 16 Nov 2026 (`python -m src`, the built-in 6-stop Kansas City demo; all 6 stops fit in the 120-minute budget). The 2-opt order is 2.8 miles (13.65%) shorter than the input order on these straight-line estimates.
+
 ```json
 {
   "stop_sequence": 1,
@@ -78,10 +80,10 @@ These points are not real locations, so distances, ETAs and the stop order invol
   "origin_address": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108",
   "origin_geocode_source": "verified_cache",
   "destination_address": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108",
-  "naive_route_total_miles": 22.86,
-  "optimized_route_total_miles": 16.41,
-  "distance_saved_miles": 6.45,
-  "distance_saved_pct": 28.22,
+  "naive_route_total_miles": 20.48,
+  "optimized_route_total_miles": 17.68,
+  "distance_saved_miles": 2.8,
+  "distance_saved_pct": 13.65,
   "google_maps_nav_url": "https://www.google.com/maps/dir/?api=1&origin=Union+Station..."
 }
 ```
@@ -111,11 +113,13 @@ for stop in client.dataset(run["defaultDatasetId"]).iterate_items():
     print(f"#{stop['stop_sequence']} {stop['label']} ({stop['cumulative_minutes']} min) -> {stop['address']}")
 ```
 
+Tests: `pytest` runs 6 offline tests.
+
 In n8n or Make.com, use the Apify "Run an Actor" node/module with the actor ID `thanh81646/apify-multi-stop-route-and-distance-optimizer`, pass your addresses into `stops`, and send `google_maps_nav_url` to whoever drives the route.
 
 ## Need a custom version?
 
-If you need extra fields, another website, scheduled runs into Google Sheets, Airtable or a webhook, or an n8n / Make workflow around this actor, email **ttrungthanh90@gmail.com** with the target site and the fields you need, and I will reply with a fixed quote. You can also message me through my [Apify profile](https://apify.com/thanh81646).
+If you need extra fields, another website, scheduled runs into Google Sheets, Airtable or a webhook, or an n8n / Make workflow around this actor, email ttrungthanh90@gmail.com with the target site and the fields you need, and I will reply with a fixed quote. You can also message me through my [Apify profile](https://apify.com/thanh81646).
 
 ## Author
 
