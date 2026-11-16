@@ -57,7 +57,7 @@ These points are not real locations, so distances, ETAs and the stop order invol
 
 ## Output record (one per stop)
 
-First record from a local run on 16 Nov 2026 (`python -m src`, the built-in 6-stop Kansas City demo; all 6 stops fit in the 120-minute budget). The 2-opt order is 2.8 miles (13.65%) shorter than the input order on these straight-line estimates.
+First record from a local run on 16 Nov 2026 (`python -m src`, the built-in 6-stop Kansas City demo; all 6 stops fit in the 120-minute budget). The 2-opt order is 2.79 miles (13.65%) shorter than the input order on these straight-line estimates.
 
 ```json
 {
@@ -82,7 +82,7 @@ First record from a local run on 16 Nov 2026 (`python -m src`, the built-in 6-st
   "destination_address": "Union Station, 30 W Pershing Rd, Kansas City, MO 64108",
   "naive_route_total_miles": 20.48,
   "optimized_route_total_miles": 17.68,
-  "distance_saved_miles": 2.8,
+  "distance_saved_miles": 2.79,
   "distance_saved_pct": 13.65,
   "google_maps_nav_url": "https://www.google.com/maps/dir/?api=1&origin=Union+Station..."
 }
